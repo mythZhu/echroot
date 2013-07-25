@@ -3,15 +3,6 @@
 import os
 import fcntl
 
-def _get_ident(fpath):
-    if os.path.exists(fpath):
-        fd = open(fpath)
-        ident = fd.readline().strip()
-        fd.close()
-        return ident
-    else:
-        return None
-
 class FileLock(object):
  
     def __init__(self, fpath):
@@ -27,7 +18,14 @@ class FileLock(object):
         self.release()
 
     def locked(self):
-        return self._lockid == _get_ident(self._lockfp)
+        try:
+            lockfd = open(self._lockfp)
+            lockid = fd.readline().strip()
+            fd.close()
+        except:
+            lockid = -1
+
+        return self._lockid == lockid
 
     def acquire(self):
         if self.locked(): 
