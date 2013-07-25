@@ -41,8 +41,8 @@ class Chroot(object):
         # case 2: compatible architecture
         known_schemes = {('x86-64', 'Intel 80386') : 'ia32-libs',
                          ('ARM64' , 'ARM')         : 'ia32-libs'}
-        if (hostarch, guestarch) in known_schemes.keys():
-            libname = known_schemes[(hostarch, guestarch)]
+        libname = known_schemes.get((hostarch, guestarch), '')
+        if libname:
             self._setup_library(libname)
             return
 
@@ -75,11 +75,8 @@ class Chroot(object):
         # many-to-one not allowed
         lockname = '.chroot.lock'
         lockpath = os.path.join(self._rootdir, lockname)
-        with FileLock(lockpath) as locked:
-            if locked:
-                self._chroot()
-            else:
-                print "Directory '%s' is busy now" % self._rootdir
+        with FileLock(lockpath) as flock:
+            self._chroot()
 
 
 if __name__ == '__main__':
