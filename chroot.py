@@ -73,9 +73,7 @@ class Chroot(object):
     def chroot(self):
         # try to lock chrootdir
         # many-to-one not allowed
-        lockname = '.chroot.lock'
-        lockpath = os.path.join(self._rootdir, lockname)
-        with FileLock(lockpath) as flock:
+        with FileLock(self._rootdir) as flock:
             self._chroot()
 
 
