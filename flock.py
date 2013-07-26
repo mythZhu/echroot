@@ -48,9 +48,10 @@ class PidFileLock(object):
             Try to create PID file for this lock. If the lock
             is in use, wait util it is available unless the 
             timeout has been set.
-
-            It is okay to acquire this lock twice and more.
         """
+        if self.locked(): 
+            return
+
         start_time = time.time()
 
         while True:
