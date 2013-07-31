@@ -4,8 +4,6 @@ import os
 import errno
 import time
 
-from hashlib import md5
-
 class FileLockError(Exception): 
     """ Base exception class for FileLock class"""
     pass
@@ -23,12 +21,16 @@ class PidFileLock(object):
         """ Prepare the file lock.
 
             Specify @fpath as the file or directory to lock.
-            If @timeout is `None`, block when acquire. In 
-            order to avoid that some common file has thesame 
-            name with the lock file, the lock file will be 
-            named after the MD5 value of @fpath.
+            If @fpath is a common file, lock file will be
+            located in the parent directory of @fpath. If
+            @fpath is a directory, lock file will be located
+            in the @fpath. If @timeout is `None`, block when 
+            acquire. 
         """
-        self._lockfp = md5(fpath).hexdigest()
+        fbase = ".%s.lock" % os.path.basename(fpath)
+        fdir = not os.path.isdir(fpath) and os.path.dirname(fpath) or fpath
+
+        self._lockfp = os.path.join(fdir, fbase)
         self._lockid = os.getpid()
         self._timeout = timeout
 
