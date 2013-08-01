@@ -4,7 +4,7 @@
 import os
 import subprocess
 
-from path import cano_path, make_dirs, remove_dirs, read_link
+from path import cano_path, make_dirs, remove_dirs
 
 class BindingError(Exception):
     """ Base exception class for Binding class. """
@@ -23,8 +23,8 @@ class Binding(object):
             to be a directory. The case that @newdir doesn't 
             exist is all right, too.
         """
-        self._olddir = cano_path(read_link(olddir))
-        self._newdir = cano_path(read_link(newdir))
+        self._olddir = cano_path(olddir)
+        self._newdir = cano_path(newdir)
         self._option = ','.join(options or ["bind"])
         self._mkstat = False
 

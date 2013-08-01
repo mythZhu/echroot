@@ -2,9 +2,23 @@
 # -*- coding: utf-8 -*-
 
 import os
+import shutil
+
+def norm_path(filepath, rootpath='/'):
+    """ Normalize file path to absolute path.
+
+        Expand ~ and ~user constructions and transform file
+        path to absolute one. If necessary, substitute 
+        @rootpath for '/'.
+    """
+    filepath = os.path.abspath(os.path.expanduser(filepath))
+    rootpath = os.path.abspath(os.path.expanduser(rootpath))
+    canopath = os.path.join(rootpath, filepath.lstrip('/'))
+
+    return canopath
 
 def cano_path(filepath, rootpath='/'):
-    """ Canonicalize file path.
+    """ Canonicalize file path to real path.
 
         Expand ~ and ~user constructions and eliminate any
         symbolic links encountered in the path. If necessary, 
@@ -49,20 +63,16 @@ def make_node(nodepath, mode=0600):
         create @nodepath without exception. Return `True`
         if @nodepath has been created successfully.
     """
-    try:
-        make_dirs(os.path.dirname(nodepath))
-        os.mknod(nodepath, mode)
-    except:
-        return False
-    else:
-        return True
+    make_dirs(os.path.dirname(nodepath))
+    os.mknod(nodepath, mode)
 
-def read_link(linkpath):
-    """ Return the path to which the symbolic link points. 
+def copy_file(srcfile, dstfile, shadow=True):
+    """ Copy data from @srcfile to @dstfile.
 
-        If @linkpath is not a link, return @linkpath itself.
+        Shadow copy is default method.
     """
-    if os.path.islink(linkpath):
-        return os.readlink(linkpath)
+    if os.path.islink(srcfile):
+        linkto = os.readlink(srcfile)
+        os.symlink(linkto, dstfile)
     else:
-        return linkpath
+        shutil.copyfile(srcfile, dstfile)

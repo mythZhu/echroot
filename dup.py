@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import shutil
 
-from path import cano_path, read_link, make_node
+from path import norm_path, make_node, copy_file
 
 class DuppingError(Exception):
     """ Base exception class for dupping class. """
@@ -13,24 +12,26 @@ class DuppingError(Exception):
 class Dupping(object):
     """ Represent a dup of file.
 
-        This class is responsible for copying source
-        file and restoring overwrited dest file.
+        This class is responsible for copying source file 
+        and restoring overwrited dest file. Shadow copy is
+        default method.
     """
 
-    def __init__(self, srcfile, dstfile):
+    def __init__(self, srcfile, dstfile, shadow=True):
         """ Prepare for a dup instance.
             
             @srcfile must exist as a common file. @dstfile
             shouldn't exist. If @dstfile exists already, it 
             must be a common file, too.
         """
-        self._srcfile = cano_path(srcfile)
-        self._dstfile = cano_path(dstfile)
+        self._srcfile = norm_path(srcfile)
+        self._dstfile = norm_path(dstfile)
+        self._shadow = shadow
         self._mkstat = False
 
         if not os.path.isfile(self._srcfile):
             raise DuppingError("srcfile '%s' is not file." % self._srcfile)
-        if os.path.exists(self._dstfile) and \
+        if os.path.lexists(self._dstfile) and \
            not os.path.isfile(self._dstfile):
             raise DuppingError("dstfile '%s' is not file." % self._dstfile)
 
@@ -38,7 +39,7 @@ class Dupping(object):
         bakname = ".%s.bak" % os.path.basename(self._dstfile)
         self._bakfile = os.path.join(bakdir, bakname)
 
-        if os.path.exists(self._bakfile):
+        if os.path.lexists(self._bakfile):
             raise DuppingError("Cann't create backup file.")
 
     def __str__(self):
@@ -52,7 +53,7 @@ class Dupping(object):
             Return `True` if there is a backup file belonging
             to this dupping.
         """
-        return os.path.exists(self._bakfile)
+        return os.path.lexists(self._bakfile)
 
     def dup(self):
         """ Copy srcfile as dstfile.
@@ -67,9 +68,12 @@ class Dupping(object):
         if self.dupped(): 
             return
 
-        self._mkstat = make_node(self._dstfile, 0666)
+        if not os.path.lexists(self._dstfile):
+            make_node(self._dstfile, 0666)
+            self._mkstat = True
+
         os.rename(self._dstfile, self._bakfile)
-        shutil.copyfile(self._srcfile, self._dstfile)
+        copy_file(self._srcfile, self._dstfile, self._shadow)
 
     def undup(self):
         """ Delete dstfile and restore origin dstfile.

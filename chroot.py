@@ -5,15 +5,16 @@ import os
 import glob
 import subprocess
 
-from path import cano_path
 from elf import ElfObject, is_elf
 from dup import Dupping, DuppingError
+from qemu import setup_qemu_emulator
+from path import norm_path, cano_path
 from bind import Binding, BindingError
 from flock import FileLock
 
 def what_arch(rootdir, checks):
     for chk in checks:
-        path = cano_path(chk)
+        path = norm_path(chk, rootdir)
         arch = is_elf(path) and ElfObject(path).machine
         if arch: return arch
     else: 
@@ -35,7 +36,7 @@ class Chroot(object):
                  "/var/lock/:/var/lock/", )
 
     FILEDUPS = ( "/etc/resolv.conf:/etc/resolv.conf",
-                 "/etc/mtab:/etc/mtab")
+                 "/etc/mtab:/etc/mtab", )
 
     def __init__(self, rootdir, execute="/bin/bash"):
         self._rootdir = rootdir
@@ -58,36 +59,32 @@ class Chroot(object):
 
             binding.bind()
             binding.binded() and self._bindings.append(binding)
-            print binding
 
     def _setup_duppings(self, filedups=FILEDUPS):
         for filedup in filedups:
             try:
                 splits  = filedup.split(':')
                 srcfile = splits[0].strip()
-                dstfile = cano_path(splits[1].strip(), self._rootdir)
+                dstfile = norm_path(splits[1].strip(), self._rootdir)
                 dupping = Dupping(srcfile, dstfile)
             except DuppingError:
                 continue
 
             dupping.dup()
             dupping.dupped() and self._duppings.append(dupping)
-            print dupping
 
     def _setup_emulator(self, checks=FILECHKS):
-        pass
+        arch = what_arch(self._rootdir, checks)
+        if arch and "arm" in arch.lower():
+            self._emulator = setup_qemu_emulator(self._rootdir, "arm")
 
     def _unset_bindings(self):
         for binding in reversed(self._bindings):
             binding.unbind()
-            not binding.binded() and self._bindings.remove(binding)
-            print binding
 
     def _unset_duppings(self):
         for dupping in self._duppings:
             dupping.undup()
-            not dupping.dupped() and self._duppings.remove(dupping)
-            print dupping
 
     def _unset_emulator(self):
         if os.path.exists(self._emulator):
@@ -98,24 +95,14 @@ class Chroot(object):
             try:
                 os.kill(proc, 9)
             except:
-                print "[FAIL] Terminal process %d." % proc
-            else:
-                print "[DONE] Terminal process %d." % proc
+                pass
 
     def _setup(self):
-        print
-        print "--------------SETUP--------------"
-        print
-
         self._setup_bindings()
         self._setup_duppings()
         self._setup_emulator()
 
     def _unset(self):
-        print
-        print "--------------UNSET--------------"
-        print
-
         self._kill_processes()
         self._unset_emulator()
         self._unset_duppings()
@@ -126,9 +113,8 @@ class Chroot(object):
             os.chroot(self._rootdir)
             os.chdir('/')
 
-        print
-        print "--------------LOGIN--------------"
-        print
+        print "Launching shell. Exit to continue."
+        print "----------------------------------"
 
         subprocess.call(self._execute, preexec_fn = oschroot, shell=True)
 
