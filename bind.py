@@ -44,22 +44,22 @@ class Binding(object):
 
             Mountpoints are expected to be available and unbinded.
         """
-        cmdline = "mount -o %s %s %s" % (self._option, 
-                                         self._olddir, 
-                                         self._newdir)
-        retcode = subprocess.call(cmdline, shell=True)
+        with open(os.path.devnull) as devnull:
+            cmd = "mount -o %s %s %s" % (self._option, self._olddir, self._newdir)
+            ret = subprocess.call(cmd, stdout=devnull, stderr=devnull, shell=True)
 
-        return retcode == 0
+        return ret == 0
 
     def _unbind(self):
         """ Call umount(8) to unbind.
 
             Mountpoints are expected to be binded already.
         """ 
-        cmdline = "umount %s" % self._newdir
-        retcode = subprocess.call(cmdline, shell=True)
+        with open(os.path.devnull) as devnull:
+            cmd = "umount %s" % self._newdir
+            ret = subprocess.call(cmd, stdout=devnull, stderr=devnull, shell=True)
 
-        return retcode == 0
+        return ret == 0
 
     def binded(self):
         """ Test if this binding is binded. """
@@ -88,10 +88,3 @@ class Binding(object):
             return
 
         self._unbind() and self._mkstat and remove_dirs(self._newdir)
-
-if __name__ == '__main__':
-    binding = Binding('/var/run/dbus', '/tmp/jail/var/run/dbus')
-    binding.bind()
-    print binding
-    binding.unbind()
-    print binding
