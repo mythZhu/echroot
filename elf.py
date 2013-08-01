@@ -159,4 +159,5 @@ def is_elf(filepath):
         
         Return `True` is @filepath is an ELF file.
     """
-    return unpack_from(filepath, "=16s", 0)[:SELFMAG] == ELFMAG
+    return os.path.lexists(filepath) and \
+           unpack_from(filepath, "=16s", 0)[:SELFMAG] == ELFMAG
