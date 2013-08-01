@@ -6,12 +6,12 @@ import os
 def cano_path(filepath, rootpath='/'):
     """ Canonicalize file path.
 
-        Expand ~ and ~user constructions.
-        Translate relative path to absolute one.
-        If necessary, substitute @rootpath for '/'.
+        Expand ~ and ~user constructions and eliminate any
+        symbolic links encountered in the path. If necessary, 
+        substitute @rootpath for '/'.
     """
-    filepath = os.path.abspath(os.path.expanduser(filepath))
-    rootpath = os.path.abspath(os.path.expanduser(rootpath))
+    filepath = os.path.realpath(os.path.expanduser(filepath))
+    rootpath = os.path.realpath(os.path.expanduser(rootpath))
     canopath = os.path.join(rootpath, filepath.lstrip('/'))
 
     return canopath
