@@ -77,7 +77,9 @@ class Binding(object):
         if self.binded(): 
             return
 
-        self._mkstat = make_dirs(self._newdir)
+        if not os.path.exists(self._newdir):
+            self._mkstat = make_dirs(self._newdir)
+
         self._bind() or self._makstat and remove_dirs(self._newdir)
 
     def unbind(self):

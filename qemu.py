@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 import shutil
 
 from run import call
@@ -15,24 +16,37 @@ def disable_selinux():
     """
     return call("setenforce 0")[0] == 0
 
-def install_qemu_emulator(rootdir, arch):
+def install_qemu_emulator(rootdir, qemubase):
     """ Install statically-linked qemu emulator. 
         
         If failed to find qemu-@arch-static emulator at the local, 
         turn to recommanded repos for help.
     """
-    try:
-        srcpath = "/usr/bin/qemu-%s-static" % arch
-        dstpath = norm_path(srcpath, rootdir)
-        make_dirs(os.path.dirname(dstpath))
-        shutil.copy(srcpath, dstpath)
-    except:
-        return None
+    for srcdir in os.getenv("PATH", "/usr/local/bin/:/usr/bin/").split(':'):
+        srcpath = os.path.join(srcdir, qemubase)
+        if os.path.exists(srcpath):
+            dstdir = norm_path("/usr/bin/", rootdir)
+            dstpath = os.path.join(dstdir, qemubase)
+            make_dirs(dstdir) and shutil.copy(srcpath, dstpath)
+            return True
     else:
-        return dstpath
+        return False
+
+def uninstall_qemu_emulator(rootdir, qemubase):
+    """ Uninstall statically-linked qemu emulator. 
+
+        Remove '@rootdir/usr/bin/@qemubase' simply.
+    """
+    qemupath = os.path.join("/usr/bin/", qemubase)
+    qemupath = norm_path(qemupath, rootdir)
+    
+    if os.path.exists(qemupath):
+        os.unlink(qemupath)
+
+    return os.path.exists(qemupath)
 
 def register_qemu_emulator(qemu, arch):
-    """ Register qemu emulator for other arch executable file.
+    """ Register qemu emulator for @arch executable file.
 
         Mount binfmt_misc if it doesn't exist. Unregister qemu-@arch, 
         if it has been registered and isn't a statically-linked executable
@@ -46,11 +60,8 @@ def register_qemu_emulator(qemu, arch):
         call("mount -t binfmt_misc none %s" % os.path.dirname(register_node))
 
     qemu_node = "/proc/sys/fs/binfmt_misc/%s" % arch
-
     if os.path.exists(qemu_node):
-        fd = open(qemu_node, 'w')
-        fd.write("-1\n")
-        fd.close()
+        unregister_qemu_emulator(qemu, arch)
 
     if not os.path.exists(qemu_node):
         magic = MAGIC.get(arch, None)
@@ -62,23 +73,10 @@ def register_qemu_emulator(qemu, arch):
             fd.close()
             return True
 
-def setup_qemu_emulator(rootdir, arch):
-    """ Install and register qemu emulator in @rootdir. 
+def unregister_qemu_emulator(qemu, arch):
+    """ Unregister qemu emulator for @arch executable file.
 
-        Statically-linked qemu emulator is expected to be
-        configured rather than dynamically-linked one.
-    """
-    qemu = install_qemu_emulator(rootdir, arch)
-
-    if qemu:
-        register_qemu_emulator(qemu.replace(rootdir, '/'), arch)
-        disable_selinux()
-        return qemu
-    else:
-        return ''
-
-def unset_qemu_emulator(rootdir, arch, qemu):
-    """ Unregister and remove qemu emulator in @rootdir. 
+        Remove @arch node from binfmt_misc directory.
     """
     qemu_node = "/proc/sys/fs/binfmt_misc/%s" % arch
 
@@ -87,5 +85,30 @@ def unset_qemu_emulator(rootdir, arch, qemu):
         fd.write("-1\n")
         fd.close()
 
-    if os.path.exists(qemu):
-        os.unlink(qemu)
+    return not os.path.exists(qemu_node)
+
+def setup_qemu_emulator(rootdir, arch):
+    """ Install and register qemu emulator in @rootdir. 
+
+        Statically-linked qemu emulator is expected to be
+        configured rather than dynamically-linked one.
+    """
+    qemubase = "qemu-%s-static" % arch
+    qemupath = os.path.join("/usr/bin/", qemubase)
+
+    stat = install_qemu_emulator(rootdir, qemubase) and \
+           register_qemu_emulator(qemupath, arch) and \
+           disable_selinux()
+
+    if stat:
+        return qemubase
+    else:
+        return None
+
+def unset_qemu_emulator(rootdir, qemubase):
+    """ Unregister and remove qemu emulator in @rootdir. """
+    arch = re.match("qemu-([a-zA-A]*)-static", qemubase).group(1)
+    qemupath = os.path.join("/usr/bin/", qemubase)
+
+    return unregister_qemu_emulator(qemupath, arch) and \
+           uninstall_qemu_emulator(rootdir, qemubase)

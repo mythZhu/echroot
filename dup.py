@@ -69,8 +69,7 @@ class Dupping(object):
             return
 
         if not os.path.lexists(self._dstfile):
-            make_node(self._dstfile, 0666)
-            self._mkstat = True
+            self._mkstat = make_node(self._dstfile, 0666)
 
         os.rename(self._dstfile, self._bakfile)
         copy_file(self._srcfile, self._dstfile, self._shadow)

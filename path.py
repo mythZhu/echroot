@@ -34,37 +34,37 @@ def make_dirs(dirpath):
     """ Create a leaf directory and all intermediate ones.
 
         os.makedirs without exception.
-        Return `True` if @dirpath has been created.
+        Return `True` if @dirpath does exist finally.
     """
     try:
         os.makedirs(dirpath)
     except:
-        return False
-    else:
-        return True
+        pass
+    finally:
+        return os.path.lexists(dirpath)
 
 def remove_dirs(dirpath):
     """ remove a leaf directory and all empty intermediate ones.
 
         os.removedirs without exception.
-        Return `True` if @dirpath has been removed.
+        Return `True` if @dirpath doesn't exist finally.
     """
     try:
         os.removedirs(dirpath)
     except:
-        return False
-    else:
-        return True
+        pass
+    finally:
+        return not os.path.lexists(dirpath)
 
 def make_node(nodepath, mode=0600):
     """ Create a filesystem node.
 
         Create directory of @nodepath, if necessary. Then
         create @nodepath without exception. Return `True`
-        if @nodepath has been created successfully.
+        if @nodepath does exist finally.
     """
-    make_dirs(os.path.dirname(nodepath))
-    os.mknod(nodepath, mode)
+    make_dirs(os.path.dirname(nodepath)) and os.mknod(nodepath, mode)
+    return os.path.lexists(nodepath)
 
 def copy_file(srcfile, dstfile, shadow=True):
     """ Copy data from @srcfile to @dstfile.

@@ -47,7 +47,7 @@ class Chroot(object):
 
         self._bindings = []
         self._duppings = []
-        self._interpre = ''
+        self._interpre = None
 
     def _setup_bindings(self, dirbinds=DIRBINDS):
         for dirbind in dirbinds:
@@ -76,10 +76,12 @@ class Chroot(object):
             dupping.dupped() and self._duppings.append(dupping)
 
     def _setup_interpre(self):
-        if self.arch == what_arch('/', self.FILECHKS):
-            return
+        if not self.arch:
+            raise ChrootError("Arch of '%s' is unknown." % self._rootdir)
 
-        if self.arch == 'arm':
+        if self.arch == what_arch('/', self.FILECHKS):
+            self._interpre = "native"
+        else:
             self._interpre = setup_qemu_emulator(self._rootdir, self.arch)
 
         if not self._interpre:
@@ -94,11 +96,10 @@ class Chroot(object):
             dupping.undup()
 
     def _unset_interpre(self):
-        if not os.path.exists(self._interpre):
+        if not self._interpre:
             return
 
-        if self.arch == 'arm':
-            unset_qemu_emulator(self._rootdir, self.arch, self._interpre)
+        unset_qemu_emulator(self._rootdir, self._interpre)
 
     def _kill_processes(self):
         for proc in self.processes:
@@ -138,7 +139,6 @@ class Chroot(object):
         with FileLock(self._rootdir) as flock:
             try:
                 self._setup()
-                print self._interpre
                 self._chroot()
 
             except ChrootError, err:
@@ -149,7 +149,6 @@ class Chroot(object):
 
     @property
     def arch(self):
-        self._arch = "user"
         if not hasattr(self, "_arch"):
             self._arch = what_arch(self._rootdir, self.FILECHKS)
 
