@@ -96,10 +96,8 @@ class Chroot(object):
             dupping.undup()
 
     def _unset_interpre(self):
-        if not self._interpre:
-            return
-
-        unset_qemu_emulator(self._rootdir, self._interpre)
+        if self._interpre and self._interpre != "native":
+            unset_qemu_emulator(self._rootdir, self._interpre)
 
     def _kill_processes(self):
         for proc in self.processes:
@@ -125,8 +123,11 @@ class Chroot(object):
             os.chdir('/')
 
         try:
-            print "Launching shell. Exit to continue."
-            print "----------------------------------"
+            print 
+            print "--------------------------------------------------------"
+            print "           Welcome To Echroot - easy chroot             "
+            print "--------------------------------------------------------"
+            print 
 
             subprocess.call(self._execute, preexec_fn = oschroot, shell=True)
 

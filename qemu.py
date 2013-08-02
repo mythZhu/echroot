@@ -10,11 +10,40 @@ from path import norm_path, make_dirs
 from magic import MAGIC
 
 def disable_selinux():
-    """ disable selinux.
+    """ Disable selinux.
     
         Selinux will block qemu emulator to run.
     """
     return call("setenforce 0")[0] == 0
+
+def download_qemu_emulator(rootdir, qemubase):
+    """ Download statically-linked qemu emulator.
+
+        Qemu emulator downloaded will be installed as @qemubase
+        in @rootdir.
+    """ 
+    repo = "http://ftp.us.debian.org/debian/pool/main/q/qemu/"
+    pkgs = {"x86_64" : "qemu-user-static_0.12.5+dfsg-3squeeze3_amd64.deb",
+            "i386"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb",
+            "i486"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb",
+            "i586"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb",
+            "i686"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb"}
+
+    pkg = pkgs.get(os.uname()[-1])
+
+    if not pkg: 
+        return 
+
+    dstdir = norm_path("/usr/bin/", rootdir)
+    dstpath = os.path.join(dstdir, qemubase)
+
+    call("wget -np -nd %s -O %s" % (repo+pkg, pkg))
+    call("ar -x %s data.tar.gz" % pkg)
+    call("tar zxvf data.tar.gz ./usr/bin/%s" % qemubase)
+    call("mv ./usr/bin/%s %s" % (qemubase, dstpath))
+    call("rm -rf %s data.tar.gz ./usr" % pkg)
+
+    return os.path.exists(dstpath)
 
 def install_qemu_emulator(rootdir, qemubase):
     """ Install statically-linked qemu emulator. 
@@ -22,6 +51,7 @@ def install_qemu_emulator(rootdir, qemubase):
         If failed to find qemu-@arch-static emulator at the local, 
         turn to recommanded repos for help.
     """
+    return download_qemu_emulator(rootdir, qemubase)
     for srcdir in os.getenv("PATH", "/usr/local/bin/:/usr/bin/").split(':'):
         srcpath = os.path.join(srcdir, qemubase)
         if os.path.exists(srcpath):
@@ -30,7 +60,7 @@ def install_qemu_emulator(rootdir, qemubase):
             make_dirs(dstdir) and shutil.copy(srcpath, dstpath)
             return True
     else:
-        return False
+        return download_qemu_emulator(rootdir, qemubase)
 
 def uninstall_qemu_emulator(rootdir, qemubase):
     """ Uninstall statically-linked qemu emulator. 
