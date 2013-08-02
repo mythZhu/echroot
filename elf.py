@@ -132,13 +132,17 @@ class ElfObject(object):
         # extract the ELF header
         self._ehdr = unpack_from(filepath, ehdr_fmt, 0)
 
-
     @property
     def machine(self):
         return {EM_386      : 'i386',
-                EM_X86_64   : 'x86-64',
+                EM_X86_64   : 'x86_64',
                 EM_ARM      : 'arm',
                 EM_AARCH64  : 'aarch64',}.get(self._ehdr[2], None)
+
+    @property
+    def order(self):
+        return {ELFDATA2LSB : 'LSB',
+                ELFDATA2MSB : 'MSB',}.get(self._ehdr[0][EI_DATA], None)
 
 
 def unpack_from(filepath, filefmt, offset=0):

@@ -57,7 +57,15 @@ class Binding(object):
 
     def binded(self):
         """ Test if this binding is binded. """
-        return os.path.ismount(self._newdir)
+        # Sometimes os.path.ismount performs incorrectly.
+        # Check mount table is a better way.
+        with open("/proc/mounts", 'r') as mnts:
+            for mnt in mnts.readlines():
+                newdir = cano_path(mnt.split()[1])
+                if self._newdir == newdir: 
+                    return True
+            else:
+                return False
 
     def bind(self):
         """ Bind olddir to newdir.

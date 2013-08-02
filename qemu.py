@@ -6,9 +6,7 @@ import shutil
 
 from run import call
 from path import norm_path, make_dirs
-
-MAGICS = { "arm"  : ":arm:M::\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x28\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfa\\xff\\xff\\xff",
-           "i386" : ":i386:M::\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff", }
+from magic import MAGIC
 
 def disable_selinux():
     """ disable selinux.
@@ -29,7 +27,7 @@ def install_qemu_emulator(rootdir, arch):
         make_dirs(os.path.dirname(dstpath))
         shutil.copy(srcpath, dstpath)
     except:
-        return ''
+        return None
     else:
         return dstpath
 
@@ -55,13 +53,12 @@ def register_qemu_emulator(qemu, arch):
         fd.close()
 
     if not os.path.exists(qemu_node):
-        magic = MAGICS.get(arch, None)
+        magic = MAGIC.get(arch, None)
         if not magic:
             return False
         else:
-            magic = magic + ":%s:\n" % qemu
             fd = open(register_node, 'w')
-            fd.write(magic)
+            fd.write("%s:%s:\n" %(magic, qemu))
             fd.close()
             return True
 
@@ -76,5 +73,19 @@ def setup_qemu_emulator(rootdir, arch):
     if qemu:
         register_qemu_emulator(qemu.replace(rootdir, '/'), arch)
         disable_selinux()
+        return qemu
+    else:
+        return ''
 
-    return qemu
+def unset_qemu_emulator(rootdir, arch, qemu):
+    """ Unregister and remove qemu emulator in @rootdir. 
+    """
+    qemu_node = "/proc/sys/fs/binfmt_misc/%s" % arch
+
+    if os.path.exists(qemu_node):
+        fd = open(qemu_node, 'w')
+        fd.write("-1\n")
+        fd.close()
+
+    if os.path.exists(qemu):
+        os.unlink(qemu)

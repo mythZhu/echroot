@@ -7,9 +7,9 @@ import subprocess
 
 from elf import ElfObject, is_elf
 from dup import Dupping, DuppingError
-from qemu import setup_qemu_emulator
-from path import norm_path, cano_path
 from bind import Binding, BindingError
+from path import norm_path, cano_path
+from qemu import setup_qemu_emulator, unset_qemu_emulator
 from flock import FileLock
 
 def what_arch(rootdir, checks):
@@ -19,6 +19,9 @@ def what_arch(rootdir, checks):
         if arch: return arch
     else: 
         return None
+
+class ChrootError(Exception):
+    pass
 
 class Chroot(object):
 
@@ -38,14 +41,13 @@ class Chroot(object):
     FILEDUPS = ( "/etc/resolv.conf:/etc/resolv.conf",
                  "/etc/mtab:/etc/mtab", )
 
-    def __init__(self, rootdir, execute="/bin/bash"):
+    def __init__(self, rootdir, execute="/bin/sh"):
         self._rootdir = rootdir
         self._execute = execute
 
         self._bindings = []
         self._duppings = []
-
-        self._interpreter = ''
+        self._interpre = ''
 
     def _setup_bindings(self, dirbinds=DIRBINDS):
         for dirbind in dirbinds:
@@ -73,10 +75,15 @@ class Chroot(object):
             dupping.dup()
             dupping.dupped() and self._duppings.append(dupping)
 
-    def _setup_interpreter(self, checks=FILECHKS):
-        arch = what_arch(self._rootdir, checks)
-        if arch:
-            self._interpreter = setup_qemu_emulator(self._rootdir, arch)
+    def _setup_interpre(self):
+        if self.arch == what_arch('/', self.FILECHKS):
+            return
+
+        if self.arch == 'arm':
+            self._interpre = setup_qemu_emulator(self._rootdir, self.arch)
+
+        if not self._interpre:
+            raise ChrootError("No interpreter for %s ELF." % self.arch)
 
     def _unset_bindings(self):
         for binding in reversed(self._bindings):
@@ -86,9 +93,12 @@ class Chroot(object):
         for dupping in self._duppings:
             dupping.undup()
 
-    def _unset_interpreter(self):
-        if os.path.exists(self._interpreter):
-            os.unlink(self._interpreter)
+    def _unset_interpre(self):
+        if not os.path.exists(self._interpre):
+            return
+
+        if self.arch == 'arm':
+            unset_qemu_emulator(self._rootdir, self.arch, self._interpre)
 
     def _kill_processes(self):
         for proc in self.processes:
@@ -100,11 +110,11 @@ class Chroot(object):
     def _setup(self):
         self._setup_bindings()
         self._setup_duppings()
-        self._setup_interpreter()
+        self._setup_interpre()
 
     def _unset(self):
         self._kill_processes()
-        self._unset_interpreter()
+        self._unset_interpre()
         self._unset_duppings()
         self._unset_bindings()
 
@@ -113,10 +123,14 @@ class Chroot(object):
             os.chroot(self._rootdir)
             os.chdir('/')
 
-        print "Launching shell. Exit to continue."
-        print "----------------------------------"
+        try:
+            print "Launching shell. Exit to continue."
+            print "----------------------------------"
 
-        subprocess.call(self._execute, preexec_fn = oschroot, shell=True)
+            subprocess.call(self._execute, preexec_fn = oschroot, shell=True)
+
+        except Exception, e:
+            print "%s - %s" % (self._execute, e)
 
     def chroot(self):
         # try to lock chrootdir
@@ -124,9 +138,22 @@ class Chroot(object):
         with FileLock(self._rootdir) as flock:
             try:
                 self._setup()
+                print self._interpre
                 self._chroot()
+
+            except ChrootError, err:
+                print err
+
             finally:
                 self._unset()
+
+    @property
+    def arch(self):
+        self._arch = "user"
+        if not hasattr(self, "_arch"):
+            self._arch = what_arch(self._rootdir, self.FILECHKS)
+
+        return self._arch
 
     @property
     def bindings(self):
