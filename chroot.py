@@ -45,7 +45,7 @@ class Chroot(object):
         self._bindings = []
         self._duppings = []
 
-        self._emulator = ''
+        self._interpreter = ''
 
     def _setup_bindings(self, dirbinds=DIRBINDS):
         for dirbind in dirbinds:
@@ -73,10 +73,10 @@ class Chroot(object):
             dupping.dup()
             dupping.dupped() and self._duppings.append(dupping)
 
-    def _setup_emulator(self, checks=FILECHKS):
+    def _setup_interpreter(self, checks=FILECHKS):
         arch = what_arch(self._rootdir, checks)
-        if arch and "arm" in arch.lower():
-            self._emulator = setup_qemu_emulator(self._rootdir, "arm")
+        if arch:
+            self._interpreter = setup_qemu_emulator(self._rootdir, arch)
 
     def _unset_bindings(self):
         for binding in reversed(self._bindings):
@@ -86,9 +86,9 @@ class Chroot(object):
         for dupping in self._duppings:
             dupping.undup()
 
-    def _unset_emulator(self):
-        if os.path.exists(self._emulator):
-            os.unlink(self._emulator)
+    def _unset_interpreter(self):
+        if os.path.exists(self._interpreter):
+            os.unlink(self._interpreter)
 
     def _kill_processes(self):
         for proc in self.processes:
@@ -100,11 +100,11 @@ class Chroot(object):
     def _setup(self):
         self._setup_bindings()
         self._setup_duppings()
-        self._setup_emulator()
+        self._setup_interpreter()
 
     def _unset(self):
         self._kill_processes()
-        self._unset_emulator()
+        self._unset_interpreter()
         self._unset_duppings()
         self._unset_bindings()
 

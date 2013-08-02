@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import subprocess
 
+from run import call
 from path import cano_path, make_dirs, remove_dirs
 
 class BindingError(Exception):
@@ -44,22 +44,16 @@ class Binding(object):
 
             Mountpoints are expected to be available and unbinded.
         """
-        with open(os.path.devnull) as devnull:
-            cmd = "mount -o %s %s %s" % (self._option, self._olddir, self._newdir)
-            ret = subprocess.call(cmd, stdout=devnull, stderr=devnull, shell=True)
-
-        return ret == 0
+        return call("mount -o %s %s %s" % (self._option, 
+                                           self._olddir, 
+                                           self._newdir))[0] == 0
 
     def _unbind(self):
         """ Call umount(8) to unbind.
 
             Mountpoints are expected to be binded already.
         """ 
-        with open(os.path.devnull) as devnull:
-            cmd = "umount %s" % self._newdir
-            ret = subprocess.call(cmd, stdout=devnull, stderr=devnull, shell=True)
-
-        return ret == 0
+        return call("umount %s" % self._newdir)[0] == 0
 
     def binded(self):
         """ Test if this binding is binded. """

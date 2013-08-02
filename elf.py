@@ -135,10 +135,10 @@ class ElfObject(object):
 
     @property
     def machine(self):
-        return {EM_386      : 'Intel 80386',
+        return {EM_386      : 'i386',
                 EM_X86_64   : 'x86-64',
-                EM_ARM      : 'ARM',
-                EM_AARCH64  : 'AARCH64',}.get(self._ehdr[2], None)
+                EM_ARM      : 'arm',
+                EM_AARCH64  : 'aarch64',}.get(self._ehdr[2], None)
 
 
 def unpack_from(filepath, filefmt, offset=0):
