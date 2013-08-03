@@ -25,7 +25,7 @@ class Binding(object):
         """
         self._olddir = cano_path(olddir)
         self._newdir = cano_path(newdir)
-        self._option = ','.join(options or ["bind"])
+        self._option = ','.join(options or [''])
         self._mkstat = False
 
         if not os.path.isdir(self._olddir):
@@ -44,9 +44,9 @@ class Binding(object):
 
             Mountpoints are expected to be available and unbinded.
         """
-        return call("mount -o %s %s %s" % (self._option, 
-                                           self._olddir, 
-                                           self._newdir))[0] == 0
+        return call("mount -o bind,%s %s %s" % (self._option, 
+                                                self._olddir, 
+                                                self._newdir))[0] == 0
 
     def _unbind(self):
         """ Call umount(8) to unbind.
@@ -80,7 +80,7 @@ class Binding(object):
         if not os.path.exists(self._newdir):
             self._mkstat = make_dirs(self._newdir)
 
-        self._bind() or self._makstat and remove_dirs(self._newdir)
+        self._bind() or self._mkstat and remove_dirs(self._newdir)
 
     def unbind(self):
         """ Unbind newdir from olddir.

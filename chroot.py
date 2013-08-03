@@ -36,7 +36,8 @@ class Chroot(object):
                  "/dev/shm/:/dev/shm/",
                  "/var/lib/dbus/:/var/lib/dbus/",
                  "/var/run/dbus/:/var/run/dbus/",
-                 "/var/lock/:/var/lock/", )
+                 "/var/lock/:/var/lock/",
+                 "/:/parent:ro", )
 
     FILEDUPS = ( "/etc/resolv.conf:/etc/resolv.conf",
                  "/etc/mtab:/etc/mtab", )
