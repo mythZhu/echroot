@@ -117,7 +117,7 @@ class ElfObject(object):
             an exception.If so, extract the ELF header
             according to ELF file class.
         """
-        if not is_elf(filepath):
+        if not is_elfobj(filepath):
             raise ElfObjectError("Not a valid ELF file")
             
         # extract ident array
@@ -158,7 +158,7 @@ def unpack_from(filepath, filefmt, offset=0):
     return len(wrd) == 1 and wrd[0] or wrd
 
 
-def is_elf(filepath):
+def is_elfobj(filepath):
     """ Check if the file is an ELF. 
         
         Return `True` is @filepath is an ELF file.

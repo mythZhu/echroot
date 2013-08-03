@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-
-from path import norm_path, make_node, copy_file
+import fs
 
 class DuppingError(Exception):
     """ Base exception class for dupping class. """
@@ -24,8 +23,8 @@ class Dupping(object):
             shouldn't exist. If @dstfile exists already, it 
             must be a common file, too.
         """
-        self._srcfile = norm_path(srcfile)
-        self._dstfile = norm_path(dstfile)
+        self._srcfile = fs.aux.norm_path(srcfile)
+        self._dstfile = fs.aux.norm_path(dstfile)
         self._shadow = shadow
         self._mkstat = False
 
@@ -69,10 +68,10 @@ class Dupping(object):
             return
 
         if not os.path.lexists(self._dstfile):
-            self._mkstat = make_node(self._dstfile, 0666)
+            self._mkstat = fs.aux.make_node(self._dstfile, 0666)
 
         os.rename(self._dstfile, self._bakfile)
-        copy_file(self._srcfile, self._dstfile, self._shadow)
+        fs.aux.copy_file(self._srcfile, self._dstfile, self._shadow)
 
     def undup(self):
         """ Delete dstfile and restore origin dstfile.

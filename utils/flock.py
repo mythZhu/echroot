@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import errno
 import time
+import errno
 
 class FileLockError(Exception): 
     """ Base exception class for FileLock class"""

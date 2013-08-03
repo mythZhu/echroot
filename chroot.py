@@ -5,17 +5,18 @@ import os
 import glob
 import subprocess
 
-from elf import ElfObject, is_elf
-from dup import Dupping, DuppingError
-from bind import Binding, BindingError
-from path import norm_path, cano_path
-from qemu import setup_qemu_emulator, unset_qemu_emulator
-from flock import FileLock
+import fs
+import elf
+import interp
+
+from fs.dup import Dupping, DuppingError
+from fs.bind import Binding, BindingError
+from utils.flock import FileLock, FileLockError
 
 def what_arch(rootdir, checks):
     for chk in checks:
-        path = norm_path(chk, rootdir)
-        arch = is_elf(path) and ElfObject(path).machine
+        path = fs.aux.norm_path(chk, rootdir)
+        arch = elf.is_elfobj(path) and elf.ElfObject(path).machine
         if arch: return arch
     else: 
         return None
@@ -55,7 +56,7 @@ class Chroot(object):
             try:
                 splits = dirbind.split(':')
                 olddir = splits[0].strip()
-                newdir = cano_path(splits[1].strip(), self._rootdir)
+                newdir = fs.aux.cano_path(splits[1].strip(), self._rootdir)
                 binding = Binding(olddir, newdir, *splits[2:])
             except BindingError:
                 continue
@@ -68,7 +69,7 @@ class Chroot(object):
             try:
                 splits  = filedup.split(':')
                 srcfile = splits[0].strip()
-                dstfile = norm_path(splits[1].strip(), self._rootdir)
+                dstfile = fs.aux.norm_path(splits[1].strip(), self._rootdir)
                 dupping = Dupping(srcfile, dstfile)
             except DuppingError:
                 continue
@@ -78,15 +79,15 @@ class Chroot(object):
 
     def _setup_interpre(self):
         if not self.arch:
-            raise ChrootError("Arch of '%s' is unknown." % self._rootdir)
+            raise ChrootError("setup: cann't resolve arch of '%s'." % self._rootdir)
 
         if self.arch == what_arch('/', self.FILECHKS):
             self._interpre = "native"
         else:
-            self._interpre = setup_qemu_emulator(self._rootdir, self.arch)
+            self._interpre = interp.qemu.setup(self._rootdir, self.arch)
 
         if not self._interpre:
-            raise ChrootError("No interpreter for %s ELF." % self.arch)
+            raise ChrootError("setup: cann't setup %s interpreter." % self.arch)
 
     def _unset_bindings(self):
         for binding in reversed(self._bindings):
@@ -98,7 +99,7 @@ class Chroot(object):
 
     def _unset_interpre(self):
         if self._interpre and self._interpre != "native":
-            unset_qemu_emulator(self._rootdir, self._interpre)
+            interp.qemu.unset(self._rootdir, self._interpre)
 
     def _kill_processes(self):
         for proc in self.processes:
@@ -106,6 +107,11 @@ class Chroot(object):
                 os.kill(proc, 9)
             except:
                 pass
+
+    def _check(self):
+        # TODO: more checks are necessary
+        if not os.path.isdir(self._rootdir):
+            raise ChrootError("check: '%s' not a directory." % self._rootdir)
 
     def _setup(self):
         self._setup_bindings()
@@ -133,18 +139,17 @@ class Chroot(object):
             subprocess.call(self._execute, preexec_fn = oschroot, shell=True)
 
         except Exception, e:
-            print "%s - %s" % (self._execute, e)
+            raise ChrootError("chroot: %s." % e)
 
     def chroot(self):
-        # try to lock chrootdir
-        # many-to-one not allowed
         with FileLock(self._rootdir) as flock:
             try:
+                self._check()
                 self._setup()
                 self._chroot()
 
             except ChrootError, err:
-                print err
+                raise err
 
             finally:
                 self._unset()
@@ -169,12 +174,8 @@ class Chroot(object):
         procs = []
 
         for path in glob.glob("/proc/[0-9]*/root"):
-            if os.path.samefile(self._rootdir, path):
+            if self._rootdir == os.readlink(path):
                 proc = int(path.split('/')[2])
                 procs.append(proc)
 
         return procs
-
-if __name__ == '__main__':
-    chroot = Chroot('/tmp/jail')
-    chroot.chroot()

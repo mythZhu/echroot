@@ -5,16 +5,17 @@ import os
 import re
 import shutil
 
-from run import call
-from path import norm_path, make_dirs
-from binfmts import REGFMT, MAGICS, MASKS
+import fs
+
+from utils import runner
+from interp.binfmts import REGFMT, MAGICS, MASKS
 
 def disable_selinux():
     """ Disable selinux.
     
         Selinux will block qemu emulator to run.
     """
-    return call("setenforce 0")[0] == 0
+    return runner.call("setenforce 0")[0] == 0
 
 def download_qemu_emulator(rootdir, qemubase):
     """ Download statically-linked qemu emulator.
@@ -23,11 +24,11 @@ def download_qemu_emulator(rootdir, qemubase):
         in @rootdir.
     """ 
     repo = "http://ftp.us.debian.org/debian/pool/main/q/qemu"
-    pkgs = { "x86_64" : "qemu-user-static_0.12.5+dfsg-3squeeze3_amd64.deb",
-             "i386"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb",
-             "i486"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb",
-             "i586"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb",
-             "i686"   : "qemu-user-static_0.12.5+dfsg-3squeeze3_i386.deb", }
+    pkgs = { "i386"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb",
+             "i486"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb",
+             "i586"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb",
+             "i686"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb", 
+             "x86_64" : "qemu-user-static_1.5.0+dfsg-5_amd64.deb", }
 
     pkg = pkgs.get(os.uname()[-1])
 
@@ -40,7 +41,7 @@ def download_qemu_emulator(rootdir, qemubase):
 
     cmdln = howto.format(PRE=repo, PKG=pkg, OUT=pkg, DIR=rootdir, OBJ=qemubase)
 
-    return call(cmdln)[0] == 0
+    return runner.call(cmdln)[0] == 0
 
 def install_qemu_emulator(rootdir, qemubase):
     """ Install statically-linked qemu emulator. 
@@ -51,9 +52,9 @@ def install_qemu_emulator(rootdir, qemubase):
     for srcdir in os.getenv("PATH", "/usr/local/bin/:/usr/bin/").split(':'):
         srcpath = os.path.join(srcdir, qemubase)
         if os.path.exists(srcpath):
-            dstdir = norm_path("/usr/bin/", rootdir)
+            dstdir = fs.aux.norm_path("/usr/bin/", rootdir)
             dstpath = os.path.join(dstdir, qemubase)
-            make_dirs(dstdir) and shutil.copy(srcpath, dstpath)
+            fs.aux.make_dirs(dstdir) and shutil.copy(srcpath, dstpath)
             return True
     else:
         return download_qemu_emulator(rootdir, qemubase)
@@ -64,7 +65,7 @@ def uninstall_qemu_emulator(rootdir, qemubase):
         Remove '@rootdir/usr/bin/@qemubase' simply.
     """
     qemupath = os.path.join("/usr/bin/", qemubase)
-    qemupath = norm_path(qemupath, rootdir)
+    qemupath = fs.aux.norm_path(qemupath, rootdir)
     
     if os.path.exists(qemupath):
         os.unlink(qemupath)
@@ -79,11 +80,11 @@ def register_qemu_emulator(qemu, arch):
     """
     binfmt_node = "/proc/sys/fs/binfmt_misc"
     if not os.path.exists(binfmt_node):
-        call("modprobe %s" % os.path.basename(binfmt_node))
+        runner.call("modprobe %s" % os.path.basename(binfmt_node))
 
     register_node = "/proc/sys/fs/binfmt_misc/register"
     if not os.path.exists(register_node):
-        call("mount -t binfmt_misc none %s" % os.path.dirname(register_node))
+        runner.call("mount -t binfmt_misc none %s" % os.path.dirname(register_node))
 
     qemu_node = "/proc/sys/fs/binfmt_misc/%s" % arch
     if os.path.exists(qemu_node):
@@ -139,3 +140,6 @@ def unset_qemu_emulator(rootdir, qemubase):
 
     return unregister_qemu_emulator(qemupath, arch) and \
            uninstall_qemu_emulator(rootdir, qemubase)
+
+setup = setup_qemu_emulator
+unset = unset_qemu_emulator
