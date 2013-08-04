@@ -98,7 +98,13 @@ class Chroot(object):
             dupping.undup()
 
     def _unset_interpre(self):
-        if self._interpre and self._interpre != "native":
+        if not self._interpre:
+            return
+
+        if self._interpre == "native":
+            return
+
+        if self._interpre.startswith("qemu"):
             interp.qemu.unset(self._rootdir, self._interpre)
 
     def _kill_processes(self):

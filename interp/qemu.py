@@ -17,39 +17,13 @@ def disable_selinux():
     """
     return runner.call("setenforce 0")[0] == 0
 
-def download_qemu_emulator(rootdir, qemubase):
-    """ Download statically-linked qemu emulator.
-
-        Qemu emulator downloaded will be installed as @qemubase
-        in @rootdir.
-    """ 
-    repo = "http://ftp.us.debian.org/debian/pool/main/q/qemu"
-    pkgs = { "i386"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb",
-             "i486"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb",
-             "i586"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb",
-             "i686"   : "qemu-user-static_1.5.0+dfsg-5_i386.deb", 
-             "x86_64" : "qemu-user-static_1.5.0+dfsg-5_amd64.deb", }
-
-    pkg = pkgs.get(os.uname()[-1])
-
-    if not pkg: 
-        return 
-
-    howto = "wget -np -nd {PRE}/{PKG} -O {OUT} && \
-             ar p {OUT} data.tar.gz | tar zx -C {DIR} ./usr/bin/{OBJ} && \
-             rm -rf {OUT}"
-
-    cmdln = howto.format(PRE=repo, PKG=pkg, OUT=pkg, DIR=rootdir, OBJ=qemubase)
-
-    return runner.call(cmdln)[0] == 0
-
 def install_qemu_emulator(rootdir, qemubase):
     """ Install statically-linked qemu emulator. 
         
         If failed to find qemu-@arch-static emulator at the local, 
         turn to recommanded repos for help.
     """
-    for srcdir in os.getenv("PATH", "/usr/local/bin/:/usr/bin/").split(':'):
+    for srcdir in os.getenv("PATH", "/usr/bin/").split(':'):
         srcpath = os.path.join(srcdir, qemubase)
         if os.path.exists(srcpath):
             dstdir = fs.aux.norm_path("/usr/bin/", rootdir)
@@ -57,7 +31,8 @@ def install_qemu_emulator(rootdir, qemubase):
             fs.aux.make_dirs(dstdir) and shutil.copy(srcpath, dstpath)
             return True
     else:
-        return download_qemu_emulator(rootdir, qemubase)
+        cmdln = "sh scripts/fetch-qemu.sh %s %s" % (qemubase, rootdir)
+        return runner.call(cmdln)[0] == 0
 
 def uninstall_qemu_emulator(rootdir, qemubase):
     """ Uninstall statically-linked qemu emulator. 
@@ -75,8 +50,9 @@ def uninstall_qemu_emulator(rootdir, qemubase):
 def register_qemu_emulator(qemu, arch):
     """ Register qemu emulator for @arch executable file.
 
-        Mount binfmt_misc if it doesn't exist. Unregister qemu-@arch, 
-        if it has been registered and isn't a statically-linked executable
+        Mount binfmt_misc if it doesn't exist. Unregister 
+        qemu-@arch, if it has been registered and isn't a 
+        statically-linked executable
     """
     binfmt_node = "/proc/sys/fs/binfmt_misc"
     if not os.path.exists(binfmt_node):
@@ -134,7 +110,10 @@ def setup_qemu_emulator(rootdir, arch):
         return None
 
 def unset_qemu_emulator(rootdir, qemubase):
-    """ Unregister and remove qemu emulator in @rootdir. """
+    """ Unregister and remove qemu emulator in @rootdir. 
+
+        Qemu emulator is expected in @rootdir/usr/bin.
+    """
     arch = re.match("qemu-(\w*)-static", qemubase).group(1)
     qemupath = os.path.join("/usr/bin/", qemubase)
 
