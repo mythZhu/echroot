@@ -116,7 +116,7 @@ class Chroot(object):
 
     def _check(self):
         # TODO: more checks are necessary
-        if os.getuid() != 0:
+        if os.geteuid() != 0:
             raise ChrootError("check: Permission denied.")
 
         if not os.path.isdir(self._rootdir):
