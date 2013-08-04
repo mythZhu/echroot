@@ -2,37 +2,47 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from optparse import OptionParser
+import optparse
 
 from chroot import Chroot, ChrootError
+
 
 def main(argv):
     usage = "%prog [OPTION] NEWROOT [COMMAND [ARG]...]"
     version = "%prog alpha"
-    parser = OptionParser(usage=usage, version=version)
+    parser = optparse.OptionParser(usage=usage, version=version)
 
     for ind, arg in enumerate(argv):
-        if not arg.startswith("--"):
-            opts = parser.parse_args(argv[:ind])[0]
-            ndir = argv[ind]
-            cmds = argv[ind + 1:]
-            break
-    else:
+        if arg.startswith("-") or arg.startswith("--"):
+            continue
+        ndir = argv[ind]
+        cmds = ' '.join(argv[ind + 1:])
+        argv = argv[:ind]
+        break
+
+    opts, args = parser.parse_args(argv)
+
+    if args or not ndir:
         parser.print_help()
         sys.exit(1)
 
     try:
-        ech = Chroot(ndir, ' '.join(cmds))
+        exe = cmds or "/bin/sh"
+        ech = Chroot(ndir, exe)
         ech.chroot()
+
     except ChrootError, err:
-        print "echroot: %s" % err
+        print >> sys.stderr, err
         sys.exit(1)
+
     else:
-        exit(0)
+        sys.exit(0)
+
 
 if __name__ == "__main__":
     try:
         main(sys.argv[1:])
+
     except KeyboardInterrupt, e:
         print >> sys.stderr, "\n\nExiting on user cancel."
         sys.exit(1)
