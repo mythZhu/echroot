@@ -116,6 +116,9 @@ class Chroot(object):
 
     def _check(self):
         # TODO: more checks are necessary
+        if os.getuid() != 0:
+            raise ChrootError("check: Permission denied.")
+
         if not os.path.isdir(self._rootdir):
             raise ChrootError("check: '%s' not a directory." % self._rootdir)
 
@@ -179,9 +182,13 @@ class Chroot(object):
     def processes(self):
         procs = []
 
-        for path in glob.glob("/proc/[0-9]*/root"):
-            if self._rootdir == os.readlink(path):
-                proc = int(path.split('/')[2])
-                procs.append(proc)
+        for root in glob.glob("/proc/[0-9]*/root"):
+            try:
+                link = os.readlink(root)
+                proc = int(root.split('/')[2])
+            except OSError:
+                continue
+            else:
+                link == self._rootdir and procs.append(proc)
 
         return procs
