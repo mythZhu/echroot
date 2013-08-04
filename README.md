@@ -23,10 +23,10 @@ Description
 -----------
 Run COMMAND with root directory set to NEWROOT.
 
-    * --version 
+    --version 
           output version information and exit
 
-    * -h, --help 
+    -h, --help 
           display this help and exit
 
 License
