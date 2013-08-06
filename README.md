@@ -14,8 +14,8 @@ What's this for?
 ----------------
 Anyone who wants to run a chroot whose architecture is different from the host one.
 
-Where to get rootfs?
---------------------
+Where's rootfs?
+---------------
 * Slackware and Arch for ARM:
 
   * ftp://ftp.armedslack.org/slackwarearm/slackwarearm-devtools/minirootfs/roots/
