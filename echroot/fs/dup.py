@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-import aux
+from echroot.fs import aux
 
 class DuppingError(Exception):
     """ Base exception class for dupping class. """

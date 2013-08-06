@@ -5,13 +5,10 @@ import os
 import glob
 import subprocess
 
-import fs
-import elf
-import interp
-
-from fs.dup import Dupping, DuppingError
-from fs.bind import Binding, BindingError
-from utils.flock import FileLock, FileLockError
+from echroot import fs, elf, interp
+from echroot.fs.dup import Dupping, DuppingError
+from echroot.fs.bind import Binding, BindingError
+from echroot.utils.flock import FileLock, FileLockError
 
 def what_arch(rootdir, checks):
     for chk in checks:

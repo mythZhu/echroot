@@ -5,10 +5,9 @@ import os
 import re
 import shutil
 
-import fs
-
-from utils import runner
-from binfmts import REGFMT, MAGICS, MASKS
+from echroot import fs
+from echroot.utils import runner
+from echroot.binfmts import REGFMT, MAGICS, MASKS
 
 def disable_selinux():
     """ Disable selinux.
@@ -31,7 +30,7 @@ def install_qemu_emulator(rootdir, qemubase):
             fs.aux.make_dirs(dstdir) and shutil.copy(srcpath, dstpath)
             return True
     else:
-        cmdln = "sh scripts/fetch-qemu.sh %s %s" % (qemubase, rootdir)
+        cmdln = "sh echroot/scripts/fetch-qemu.sh %s %s" % (qemubase, rootdir)
         return runner.call(cmdln)[0] == 0
 
 def uninstall_qemu_emulator(rootdir, qemubase):

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import aux
-from utils import runner
+from echroot.fs import aux
+from echroot.utils import runner
 
 class BindingError(Exception):
     """ Base exception class for Binding class. """
