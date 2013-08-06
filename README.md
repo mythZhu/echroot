@@ -14,6 +14,24 @@ What's this for?
 ----------------
 Anyone who wants to run a chroot whose architecture is different from the host one.
 
+Where to get rootfs?
+--------------------
+* Slackware and Arch for ARM:
+
+  * ftp://ftp.armedslack.org/slackwarearm/slackwarearm-devtools/minirootfs/roots/
+  * http://archlinuxarm.org/developers/downloads
+
+* CentOS, Debian, Fedora, Scientific, Suse, Ubuntu, ALT, Arch, CERN,
+  Gentoo, OpenSuse, Openwall, Slackware, SLES, and etc. for x86 and
+  x86-64 CPUs:
+
+  * http://download.openvz.org/template/precreated/
+  * http://cdimage.ubuntu.com/ubuntu-core/releases/
+
+* Gentoo for a lot of architectures:
+
+  * http://distfiles.gentoo.org/releases/
+
 Synposis
 --------
 echroot [OPTION] NEWROOT [COMMAND [ARG]...]
