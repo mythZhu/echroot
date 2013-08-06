@@ -7,7 +7,7 @@ import shutil
 
 from echroot import fs
 from echroot.utils import runner
-from echroot.binfmts import REGFMT, MAGICS, MASKS
+from echroot.interp.binfmts import REGFMT, MAGICS, MASKS
 
 def disable_selinux():
     """ Disable selinux.
@@ -96,12 +96,13 @@ def setup_qemu_emulator(rootdir, arch):
         Statically-linked qemu emulator is expected to be
         configured rather than dynamically-linked one.
     """
+    disable_selinux()
+
     qemubase = "qemu-%s-static" % arch
     qemupath = os.path.join("/usr/bin/", qemubase)
 
     stat = install_qemu_emulator(rootdir, qemubase) and \
-           register_qemu_emulator(qemupath, arch) and \
-           disable_selinux()
+           register_qemu_emulator(qemupath, arch)
 
     if stat:
         return qemubase
