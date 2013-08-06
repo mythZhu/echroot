@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-import fs
+import aux
 from utils import runner
 
 class BindingError(Exception):
@@ -22,8 +22,8 @@ class Binding(object):
             to be a directory. The case that @newdir doesn't 
             exist is all right, too.
         """
-        self._olddir = fs.aux.cano_path(olddir)
-        self._newdir = fs.aux.cano_path(newdir)
+        self._olddir = aux.cano_path(olddir)
+        self._newdir = aux.cano_path(newdir)
         self._option = ','.join(options or [''])
         self._mkstat = False
 
@@ -60,7 +60,7 @@ class Binding(object):
         # Check mount table is a better way.
         with open("/proc/mounts", 'r') as mnts:
             for mnt in mnts.readlines():
-                newdir = fs.aux.cano_path(mnt.split()[1])
+                newdir = aux.cano_path(mnt.split()[1])
                 if self._newdir == newdir: 
                     return True
             else:
@@ -77,9 +77,9 @@ class Binding(object):
             return
 
         if not os.path.exists(self._newdir):
-            self._mkstat = fs.aux.make_dirs(self._newdir)
+            self._mkstat = aux.make_dirs(self._newdir)
 
-        self._bind() or self._mkstat and fs.aux.remove_dirs(self._newdir)
+        self._bind() or self._mkstat and aux.remove_dirs(self._newdir)
 
     def unbind(self):
         """ Unbind newdir from olddir.
@@ -90,4 +90,4 @@ class Binding(object):
         if not self.binded():
             return
 
-        self._unbind() and self._mkstat and fs.aux.remove_dirs(self._newdir)
+        self._unbind() and self._mkstat and aux.remove_dirs(self._newdir)

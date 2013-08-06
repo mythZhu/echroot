@@ -8,7 +8,7 @@ import shutil
 import fs
 
 from utils import runner
-from interp.binfmts import REGFMT, MAGICS, MASKS
+from binfmts import REGFMT, MAGICS, MASKS
 
 def disable_selinux():
     """ Disable selinux.

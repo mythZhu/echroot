@@ -12,15 +12,18 @@ def main(argv):
     version = "%prog alpha"
     parser = optparse.OptionParser(usage=usage, version=version)
 
-    for ind, arg in enumerate(argv):
-        if arg.startswith("-") or arg.startswith("--"):
-            continue
-        ndir = argv[ind]
-        cmds = ' '.join(argv[ind + 1:])
-        argv = argv[:ind]
-        break
+    ind = 0
+    while ind < len(argv):
+        if argv[ind].startswith('--'):
+            ind = ind + 2
+        elif argv[ind].startswith('-'):
+            ind = ind + 1
+        else:
+            break
 
-    opts, args = parser.parse_args(argv)
+    opts, args = parser.parse_args(argv[ :ind])
+    ndir = ' '.join(argv[ind : ind + 1])
+    cmds = ' '.join(argv[ind + 1: ])
 
     if args or not ndir:
         parser.print_help()
