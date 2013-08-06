@@ -11,7 +11,7 @@ amd64 http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_1.5.0+df
 QEMU=$1
 ROOT=$2
 
-if [[ -z "${QEMU}" || -z "${ROOT}" ]]; then
+if [ -z "${QEMU}" -o -z "${ROOT}" ]; then
     echo "Usage: ./fetch-qemu QEMU ROOT"
     exit 1
 fi
@@ -23,16 +23,15 @@ case `uname -m` in
         ARCH="i386"
         ;;
     "x86_64")
-        ARCH="x86_64"
+        ARCH="amd64"
         ;;
 esac
 
 # determine repository
 #
-URL=`echo -e ${URLS} | grep "^${ARCH}" | tr -s ' ' | cut -d ' ' -f2`
+URL=`echo -e "${URLS}" | grep "^${ARCH}" | tr -s ' ' | cut -d ' ' -f2`
 
 [ -z "${URL}" ] && exit 1
-
 
 # download qemu package
 #

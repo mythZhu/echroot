@@ -22,6 +22,9 @@ def install_qemu_emulator(rootdir, qemubase):
         If failed to find qemu-@arch-static emulator at the local, 
         turn to recommanded repos for help.
     """
+    cmdln = "sh echroot/scripts/fetch-qemu.sh %s %s" % (qemubase, rootdir)
+    return runner.call(cmdln)[0] == 0
+
     for srcdir in os.getenv("PATH", "/usr/bin/").split(':'):
         srcpath = os.path.join(srcdir, qemubase)
         if os.path.exists(srcpath):
